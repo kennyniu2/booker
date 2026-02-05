@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/gin-gonic/gin"
+	"github.com/kennyniu2/bcj/api"
 	config "github.com/kennyniu2/bcj/configs"
 	database "github.com/kennyniu2/bcj/db"
 
@@ -62,48 +62,7 @@ func main() {
 	}
 
 	// Setup router
-	r := gin.Default()
-
-	// Add a database check endpoint
-	r.GET("/ping", func(c *gin.Context) {
-		// Check if DB is still connected
-		err := db.Ping()
-		if err != nil {
-			c.JSON(500, gin.H{
-				"message":   "pong",
-				"db_status": "disconnected",
-				"error":     err.Error(),
-			})
-			return
-		}
-
-		c.JSON(200, gin.H{
-			"message":   "pong",
-			"db_status": "connected",
-		})
-	})
-
-	// Add a database stats endpoint
-	r.GET("/db-info", func(c *gin.Context) {
-		var (
-			version     string
-			numTables   int
-			currentDB   string
-			currentUser string
-		)
-
-		db.QueryRow("SELECT version()").Scan(&version)
-		db.QueryRow("SELECT current_database()").Scan(&currentDB)
-		db.QueryRow("SELECT current_user").Scan(&currentUser)
-		db.QueryRow("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'").Scan(&numTables)
-
-		c.JSON(200, gin.H{
-			"version":      version,
-			"database":     currentDB,
-			"user":         currentUser,
-			"tables_count": numTables,
-		})
-	})
+	r := api.SetupRouter(db)
 
 	// Start the server
 	port := cfg.Port
