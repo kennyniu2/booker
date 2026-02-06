@@ -1,4 +1,4 @@
-module github.com/kennyniu2/bcj
+module github.com/kennyniu2/booker
 
 go 1.24.1
 

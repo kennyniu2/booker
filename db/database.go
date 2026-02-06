@@ -4,7 +4,7 @@ import (
     "fmt"
     "github.com/jmoiron/sqlx"
     _ "github.com/lib/pq"
-    config "github.com/kennyniu2/bcj/configs"  
+    config "github.com/kennyniu2/booker/configs"  
 )
 
 var DB *sqlx.DB

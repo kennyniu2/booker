@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/kennyniu2/bcj/api"
-	config "github.com/kennyniu2/bcj/configs"
-	database "github.com/kennyniu2/bcj/db"
+	"github.com/kennyniu2/booker/api"
+	config "github.com/kennyniu2/booker/configs"
+	database "github.com/kennyniu2/booker/db"
 
 	_ "github.com/lib/pq"
 )
