@@ -13,8 +13,9 @@ Progress Tracking: Monitor reading progress
 # Tech Stack
 Language: Go 1.24.1
 
-Framework: Gin (Web framework)
+Framework: Gin 
 
 Database: PostgreSQL
 
 ORM: sqlx
+

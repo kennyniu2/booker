@@ -7,12 +7,81 @@ on:
     branches: [ "main" ]
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
 
   build:
-
+    needs: test
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
     steps:
     - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+
+    - uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GHCR
+      if: github.event_name == 'push'
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    # Produces a lowercase ghcr.io/<owner>/<repo> image name
+    - id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}
+        tags: type=sha,format=long
+
+    # amd64 + arm64 so it runs on both x86 and Graviton (t4g) instances
+    - name: Build (and push on main)
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name == 'push' }}
+        tags: |
+          ${{ steps.meta.outputs.tags }}
+          ghcr.io/${{ github.repository }}:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Copy compose file to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        username: ${{ secrets.DEPLOY_USER }}
+        key: ${{ secrets.DEPLOY_SSH_KEY }}
+        source: compose.prod.yaml
+        target: booker
+
+    - name: Pull and restart
+      uses: appleboy/ssh-action@v1.2.0
+      env:
+        IMAGE: ${{ needs.build.outputs.image }}
+        GHCR_USER: ${{ github.actor }}
+        GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        host: ${{ secrets.DEPLOY_HOST }}
+        username: ${{ secrets.DEPLOY_USER }}
+        key: ${{ secrets.DEPLOY_SSH_KEY }}
+        envs: IMAGE,GHCR_USER,GHCR_TOKEN
+        script: |
+          cd ~/booker
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+          export IMAGE
+          docker compose -f compose.prod.yaml pull app
+          docker compose -f compose.prod.yaml up -d
+          docker image prune -f

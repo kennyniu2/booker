@@ -1,6 +1,8 @@
 package config
 
 import (
+    "errors"
+    "io/fs"
     "os"
     "github.com/joho/godotenv"
 )
@@ -13,12 +15,15 @@ type Config struct {
     DBName     string
     SecretKey  string
     Port       string
+    APIEnabled bool
+
+    DiscordToken   string
+    DiscordGuildID string
 }
 
 func Load() (*Config, error) {
-    // Load .env file
-    err := godotenv.Load()
-    if err != nil {
+    // Load .env file if present; in containers the environment is set directly
+    if err := godotenv.Load(); err != nil && !errors.Is(err, fs.ErrNotExist) {
         return nil, err
     }
 
@@ -30,6 +35,10 @@ func Load() (*Config, error) {
         DBName:     os.Getenv("DB_NAME"),
         SecretKey:  os.Getenv("SECRET_KEY"),
         Port:       getEnvOrDefault("PORT", "8080"),
+        APIEnabled: getEnvOrDefault("API_ENABLED", "true") != "false",
+
+        DiscordToken:   os.Getenv("DISCORD_TOKEN"),
+        DiscordGuildID: os.Getenv("DISCORD_GUILD_ID"),
     }, nil
 }
 

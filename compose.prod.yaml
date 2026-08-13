@@ -1,0 +1,33 @@
+# Production stack: Discord bot + Postgres. Nothing is published to the host;
+# the bot only makes outbound connections to Discord.
+# Usage on the server: IMAGE=ghcr.io/<owner>/booker:latest docker compose -f compose.prod.yaml up -d
+services:
+  app:
+    image: ${IMAGE:-ghcr.io/kennyniu2/booker:latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      API_ENABLED: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:

@@ -61,6 +61,8 @@ func createTables() error {
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         UNIQUE(user_id, book_id)
     );
+
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS discord_id VARCHAR(32) UNIQUE;
     `
     
     _, err := DB.Exec(schema)

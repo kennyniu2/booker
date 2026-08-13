@@ -26,3 +26,11 @@ go.work.sum
 #terraform
 .terraform
 compose.yaml
+
+# terraform state and secrets
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/*.tfvars
+!infra/terraform.tfvars.example
+infra/crash.log
